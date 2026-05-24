@@ -193,6 +193,7 @@ void playerTurn(char enemyBoard[BOARD_SIZE][BOARD_SIZE],char shotBoard[BOARD_SIZ
     int row,col;
 
     printf("\nYour Turn\n");
+    printf("\nEnter row col to hit\n");
 
     scanf("%d %d",&row,&col);
 
