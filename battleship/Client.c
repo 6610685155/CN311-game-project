@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 #define BOARD_SIZE 7
 
 char board[BOARD_SIZE][BOARD_SIZE];
@@ -37,13 +40,14 @@ void printBoard(char board[BOARD_SIZE][BOARD_SIZE])
     }
 }
 
-int canPlaceShip(
-    char board[BOARD_SIZE][BOARD_SIZE],
-    int row,
-    int col,
-    int size,
-    char direction)
+int canPlaceShip(char board[BOARD_SIZE][BOARD_SIZE],int row,int col,int size,char direction)
 {
+    if(row < 0 || row >= BOARD_SIZE)
+        return 0;
+
+    if(col < 0 || col >= BOARD_SIZE)
+        return 0;
+
     if(direction=='H')
     {
         if(col+size > BOARD_SIZE)
@@ -95,12 +99,15 @@ void placeShip(
 
 void setupShips(char board[BOARD_SIZE][BOARD_SIZE])
 {
+
     int ships[] = {4,3,2,2};
 
     for(int s=0;s<4;s++)
     {
         int row,col;
         char dir;
+
+
 
         while(1)
         {
@@ -134,27 +141,54 @@ void setupShips(char board[BOARD_SIZE][BOARD_SIZE])
 }
 
 
-int fire(
-    char board[BOARD_SIZE][BOARD_SIZE],
+int shipsRemaining(char board[BOARD_SIZE][BOARD_SIZE])
+{
+    int count = 0;
+
+    for(int i=0;i<BOARD_SIZE;i++)
+    {
+        for(int j=0;j<BOARD_SIZE;j++)
+        {
+            if(board[i][j] == 'S')
+            {
+                count++;
+            }
+        }
+    }
+
+    return count;
+}
+
+
+int fireAt(
+    char enemyBoard[BOARD_SIZE][BOARD_SIZE],
+    char shotBoard[BOARD_SIZE][BOARD_SIZE],
     int row,
     int col)
 {
-    if(board[row][col]=='S')
+    if(row < 0 || row >= BOARD_SIZE)
+        return -2;
+
+    if(col < 0 || col >= BOARD_SIZE)
+        return -2;
+
+    if(shotBoard[row][col] != '~')
+        return -1;
+
+    if(enemyBoard[row][col] == 'S')
     {
-        board[row][col]='X';
+        enemyBoard[row][col] = 'X';
+        shotBoard[row][col] = 'X';
+
         return 1;
     }
 
-    if(board[row][col]=='~')
-    {
-        board[row][col]='O';
-        return 0;
-    }
+    shotBoard[row][col] = 'O';
 
-    return -1;
+    return 0;
 }
 
-void playerTurn(char enemyBoard[BOARD_SIZE][BOARD_SIZE])
+void playerTurn(char enemyBoard[BOARD_SIZE][BOARD_SIZE],char shotBoard[BOARD_SIZE][BOARD_SIZE])
 {
     int row,col;
 
@@ -162,13 +196,17 @@ void playerTurn(char enemyBoard[BOARD_SIZE][BOARD_SIZE])
 
     scanf("%d %d",&row,&col);
 
-    int result = fire(enemyBoard,row,col);
+    int result =fireAt(enemyBoard, shotBoard, row, col);
 
-    if(result==1)
+    if(result == -2)
+    {
+        printf("Out of board!\n");
+    }
+    else if(result == 1)
     {
         printf("HIT!\n");
     }
-    else if(result==0)
+    else if(result == 0)
     {
         printf("MISS!\n");
     }
@@ -178,16 +216,155 @@ void playerTurn(char enemyBoard[BOARD_SIZE][BOARD_SIZE])
     }
 }
 
+void printEnemyBoard(char board[BOARD_SIZE][BOARD_SIZE])
+{
+    printf("  ");
+
+    for(int i=0;i<BOARD_SIZE;i++)
+    {
+        printf("%d ",i);
+    }
+
+    printf("\n");
+
+    for(int i=0;i<BOARD_SIZE;i++)
+    {
+        printf("%d ",i);
+
+        for(int j=0;j<BOARD_SIZE;j++)
+        {
+            char c = board[i][j];
+
+            if(c == 'S')
+            {
+                printf("~ ");
+            }
+            else
+            {
+                printf("%c ",c);
+            }
+        }
+
+        printf("\n");
+    }
+}
+
+
+void printPlayerView(
+    char ownBoard[BOARD_SIZE][BOARD_SIZE],
+    char shotBoard[BOARD_SIZE][BOARD_SIZE])
+{
+    printf("\n=== YOUR BOARD ===\n");
+    printBoard(ownBoard);
+
+    printf("\n=== ENEMY BOARD ===\n");
+    printBoard(shotBoard);
+}
+
 
 int main()
 {
-    char playerBoard[BOARD_SIZE][BOARD_SIZE];
+    char player1Board[BOARD_SIZE][BOARD_SIZE];
+    char player2Board[BOARD_SIZE][BOARD_SIZE];
 
-    initBoard(playerBoard);
+    char player1Shots[BOARD_SIZE][BOARD_SIZE];
+    char player2Shots[BOARD_SIZE][BOARD_SIZE];
 
-    setupShips(playerBoard);
+    initBoard(player1Board);
+    initBoard(player2Board);
 
-    printBoard(playerBoard);
+    initBoard(player1Shots);
+    initBoard(player2Shots);
+
+    printf("=== PLAYER 1 SETUP ===\n");
+    setupShips(player1Board);
+
+    system("cls");
+
+    printf("=== PLAYER 2 SETUP ===\n");
+    setupShips(player2Board);
+
+    system("cls");
+
+    int currentPlayer = 1;
+
+    while(1)
+    {
+        system("cls");
+
+        if(currentPlayer == 1)
+        {
+            printf("===== PLAYER 1 TURN =====\n");
+
+            printf(
+                "\nEnemy ship cells remaining: %d\n",
+                shipsRemaining(player2Board));
+
+            printPlayerView(
+                player1Board,
+                player1Shots);
+
+            playerTurn(
+                player2Board,
+                player1Shots);
+
+            if(shipsRemaining(player2Board) == 0)
+            {
+                printf("\nPLAYER 1 WINS!\n");
+
+                printf("\nPress Enter to exit...");
+                getchar();
+                getchar();
+
+                break;
+            }
+
+            printf(
+                "\nPress Enter and pass to Player 2..."
+            );
+
+            getchar();
+            getchar();
+
+            currentPlayer = 2;
+        }
+        else
+        {
+            printf("===== PLAYER 2 TURN =====\n");
+
+            printf(
+                "\nEnemy ship cells remaining: %d\n",
+                shipsRemaining(player1Board));
+
+            printPlayerView(
+                player2Board,
+                player2Shots);
+
+            playerTurn(
+                player1Board,
+                player2Shots);
+
+            if(shipsRemaining(player1Board) == 0)
+            {
+                printf("\nPLAYER 2 WINS!\n");
+
+                printf("\nPress Enter to exit...");
+                getchar();
+                getchar();
+
+                break;
+            }
+
+            printf(
+                "\nPress Enter and pass to Player 1..."
+            );
+
+            getchar();
+            getchar();
+
+            currentPlayer = 1;
+        }
+    }
 
     return 0;
 }
